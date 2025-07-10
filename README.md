@@ -5,7 +5,7 @@ A Streamlit app for customer segmentation using K-Means and DBSCAN clustering, b
 ## 🎥 Demo
 Watch the demo to see the app in action:
 
-![Customer Segmentation Demo](./CustomerSegmentationDemo.mp4)
+![Customer Segmentation Demo](./CustomerSegmentationDemo.gif)
 
 ## 📸 Screenshots
 - **Elbow Method for K Selection**: ![Elbow Method](./elbow-method.png)
