@@ -10,9 +10,9 @@ from sklearn.decomposition import PCA
 st.set_page_config(page_title="🧠 Use KMeans Model", layout='wide')
 st.title("🔍 Predict Customer Segments Using Saved K-Means Model")
 
-# Upload dataset and model
+# Upload dataset
 uploaded_file = st.file_uploader("📤 Upload your customer CSV file", type=["csv"])
-model_file = st.file_uploader("📦 Upload trained KMeans model (.pkl)", type=["pkl"])
+model_file = st.file_uploader("📦 Upload trained kmeans_model.pkl", type=["pkl"])
 
 if uploaded_file and model_file:
     try:
@@ -22,49 +22,28 @@ if uploaded_file and model_file:
         st.error(f"❌ Error loading file or model: {e}")
         st.stop()
 
-    st.subheader("📄 Uploaded Data Preview")
+    # Preprocessing
+    if 'CustomerID' in df.columns:
+        df = df.drop('CustomerID', axis=1)
+
+    if 'Gender' in df.columns:
+        df['Gender'] = df['Gender'].replace({'Male': 0, 'Female': 1})
+
+    st.subheader("📄 Uploaded Data")
     st.dataframe(df.head())
 
-    # Detect and preprocess if raw (Online Retail format)
-    if 'Invoice' in df.columns and 'Customer ID' in df.columns:
-        st.warning("⚠️ Detected raw Online Retail data. Running RFM preprocessing...")
-        df.dropna(subset=['Customer ID'], inplace=True)
-        df = df[df['Quantity'] > 0]
-        df['TotalPrice'] = df['Quantity'] * df['Price']
-        reference_date = df['InvoiceDate'].max()
-        rfm = df.groupby('Customer ID').agg({
-            'InvoiceDate': lambda x: (reference_date - x.max()).days,
-            'Invoice': 'nunique',
-            'TotalPrice': 'sum'
-        }).reset_index()
-        rfm.columns = ['CustomerID', 'Recency', 'Frequency', 'Monetary']
-        df = rfm.drop('CustomerID', axis=1)
-    else:
-        # Preprocessing for Mall Customers-style dataset
-        if 'CustomerID' in df.columns:
-            df = df.drop('CustomerID', axis=1)
-        if 'Gender' in df.columns:
-            df['Gender'] = df['Gender'].replace({'Male': 0, 'Female': 1})
-
-    st.subheader("🔄 Preprocessed Data")
-    st.dataframe(df.head())
-
-    # Scale features
+    # Scale
     scaler = StandardScaler()
     scaled_data = scaler.fit_transform(df)
 
-    # Predict
-    try:
-        labels = model.predict(scaled_data)
-        df['Predicted Cluster'] = labels
-    except Exception as e:
-        st.error(f"❌ Prediction failed: {e}")
-        st.stop()
+    # Predict using loaded model
+    labels = model.predict(scaled_data)
+    df['Predicted Cluster'] = labels
 
     st.subheader("✅ Predicted Clusters")
     st.dataframe(df.head())
 
-    # PCA
+    # PCA for visualization
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(scaled_data)
 
@@ -73,8 +52,9 @@ if uploaded_file and model_file:
     ax.set_title("📌 Cluster Visualization (PCA)")
     st.pyplot(fig)
 
+    # Cluster summary
     st.subheader("📊 Cluster Summary (Averages)")
     st.dataframe(df.groupby('Predicted Cluster').mean())
 
 else:
-    st.info("👆 Please upload both a dataset and a trained `.pkl` model to begin.")
+    st.info("👆 Please upload both a dataset and a trained .pkl model to begin.")
